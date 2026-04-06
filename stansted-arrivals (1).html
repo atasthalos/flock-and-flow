@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stansted Arrivals — Flock & Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky: #0e1a2b;
+    --sky-mid: #1a2d44;
+    --sky-light: #2a4a6b;
+    --horizon: #c4956a;
+    --dawn: #e8c49a;
+    --feather: #f0e8d8;
+    --moss: #4a7c59;
+    --moss-light: #6aad7a;
+    --wing: #8fb8d0;
+    --amber: #d4882a;
+    --red: #c94040;
+    --text-primary: #f0e8d8;
+    --text-secondary: #8fb8d0;
+    --text-muted: #5a7a9a;
+    --border: rgba(143, 184, 208, 0.15);
+    --card-bg: rgba(26, 45, 68, 0.6);
+    --card-bg-solid: #1a2d44;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: var(--sky);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SKY CANVAS ── */
+  #sky-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── LAYOUT ── */
+  .page { position: relative; z-index: 1; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem 2rem 2rem;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3.5rem, 10vw, 7rem);
+    font-weight: 300;
+    line-height: 0.95;
+    color: var(--feather);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--dawn);
+  }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.08em;
+    max-width: 380px;
+    line-height: 1.8;
+  }
+
+  .hero-status-bar {
+    display: flex;
+    gap: 2rem;
+    margin-top: 3rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hero-stat-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .hero-stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--dawn);
+    line-height: 1;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    animation: bob 2s ease-in-out infinite;
+  }
+
+  @keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+  /* ── NAV STRIP ── */
+  .nav-strip {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(14, 26, 43, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+  }
+
+  .nav-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--feather);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--feather); }
+
+  .nav-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 4rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--feather);
+  }
+
+  .section-icon {
+    font-size: 1.2rem;
+    opacity: 0.6;
+  }
+
+  .section-subtitle {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  /* ── BORDER CONTROL SECTION ── */
+  .border-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .border-panel {
+    background: var(--card-bg-solid);
+    padding: 1.5rem;
+  }
+
+  .border-panel-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .wait-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .wait-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  .wait-number.green { color: var(--moss-light); }
+  .wait-number.amber { color: var(--amber); }
+  .wait-number.red { color: var(--red); }
+
+  .wait-unit {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .wait-desc {
+    font-size: 10px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 0.5rem;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 0.8rem;
+  }
+
+  .status-pill::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-pill.green { color: var(--moss-light); background: rgba(74,124,89,0.2); }
+  .status-pill.amber { color: var(--amber); background: rgba(212,136,42,0.2); }
+  .status-pill.red { color: var(--red); background: rgba(201,64,64,0.2); }
+
+  /* ── E-GATES ── */
+  .egate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px;
+    margin-top: 1.2rem;
+  }
+
+  .egate {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    gap: 6px;
+    border: 1px solid;
+    cursor: default;
+    transition: transform 0.15s;
+  }
+
+  .egate:hover { transform: scale(1.04); }
+
+  .egate.open {
+    background: rgba(74,124,89,0.15);
+    border-color: rgba(106,173,122,0.4);
+    color: var(--moss-light);
+  }
+
+  .egate.closed {
+    background: rgba(201,64,64,0.08);
+    border-color: rgba(201,64,64,0.25);
+    color: rgba(201,64,64,0.6);
+  }
+
+  .egate.maintenance {
+    background: rgba(212,136,42,0.1);
+    border-color: rgba(212,136,42,0.3);
+    color: var(--amber);
+  }
+
+  .egate-icon { font-size: 1.2rem; }
+  .egate-num { font-size: 8px; opacity: 0.8; }
+
+  .egate-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .egate-legend span::before {
+    content: '● ';
+    font-size: 8px;
+  }
+
+  .egate-legend .l-open::before { color: var(--moss-light); }
+  .egate-legend .l-closed::before { color: var(--red); }
+  .egate-legend .l-maint::before { color: var(--amber); }
+
+  /* ── MIGRATION METAPHOR CALLOUT ── */
+  .migration-callout {
+    background: linear-gradient(135deg, rgba(26,45,68,0.8), rgba(42,74,107,0.4));
+    border: 1px solid rgba(143, 184, 208, 0.2);
+    border-left: 3px solid var(--wing);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    transition: opacity 0.6s ease;
+    min-height: 4rem;
+  }
+
+  .migration-callout strong {
+    color: var(--dawn);
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  /* ── BAGGAGE ── */
+  .belt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .belt-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px 90px 80px;
+    align-items: center;
+    gap: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    font-size: 11px;
+    transition: background 0.2s;
+  }
+
+  .belt-row:hover { background: rgba(26, 45, 68, 0.9); }
+
+  .belt-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: var(--dawn);
+    line-height: 1;
+  }
+
+  .belt-flight { color: var(--text-primary); font-size: 12px; font-weight: 500; }
+  .belt-origin { color: var(--text-muted); font-size: 10px; margin-top: 2px; }
+
+  .belt-status-badge {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-align: center;
+  }
+
+  .belt-status-badge.active { background: rgba(74,124,89,0.2); color: var(--moss-light); }
+  .belt-status-badge.due { background: rgba(212,136,42,0.15); color: var(--amber); }
+  .belt-status-badge.wait { background: rgba(26,45,68,0.8); color: var(--text-muted); border: 1px solid var(--border); }
+  .belt-status-badge.done { background: rgba(90,122,154,0.1); color: var(--text-muted); }
+
+  .belt-time { color: var(--text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .belt-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px 90px 80px;
+    gap: 1rem;
+    padding: 0 1.25rem 0.5rem;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── TRANSPORT ── */
+  .transport-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .transport-tab {
+    flex: 1;
+    padding: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid var(--border);
+  }
+
+  .transport-tab:last-child { border-right: none; }
+  .transport-tab.active { background: var(--card-bg-solid); color: var(--feather); }
+  .transport-tab:hover:not(.active) { color: var(--text-secondary); background: rgba(26,45,68,0.3); }
+
+  .transport-panel { display: none; }
+  .transport-panel.active { display: block; }
+
+  .train-row, .bus-row {
+    display: grid;
+    align-items: center;
+    gap: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 8px;
+    font-size: 11px;
+    transition: background 0.2s;
+  }
+
+  .train-row { grid-template-columns: 90px 1fr 80px 70px 80px; }
+  .bus-row { grid-template-columns: 90px 1fr 80px 90px; }
+
+  .train-row:hover, .bus-row:hover { background: rgba(26, 45, 68, 0.9); }
+
+  .depart-time {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: var(--feather);
+    line-height: 1;
+  }
+
+  .depart-time .depart-mins {
+    font-size: 0.75rem;
+    color: var(--moss-light);
+    display: block;
+    font-family: Arial, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  .route-name { color: var(--text-primary); font-size: 12px; }
+  .route-stops { color: var(--text-muted); font-size: 10px; margin-top: 2px; }
+
+  .platform-badge {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(42, 74, 107, 0.5);
+    color: var(--wing);
+    text-align: center;
+  }
+
+  .train-status { font-size: 10px; }
+  .train-status.on-time { color: var(--moss-light); }
+  .train-status.delayed { color: var(--amber); }
+  .train-status.cancelled { color: var(--red); }
+
+  .fare-tag { color: var(--text-muted); font-size: 10px; }
+
+  .table-header {
+    display: grid;
+    gap: 1rem;
+    padding: 0 1.25rem 0.5rem;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .train-header { grid-template-columns: 90px 1fr 80px 70px 80px; }
+  .bus-header { grid-template-columns: 90px 1fr 80px 90px; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: var(--feather);
+    font-weight: 300;
+  }
+
+  .footer-note {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    line-height: 1.8;
+    max-width: 400px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  .fade-in {
+    animation: fadein 0.6s ease both;
+  }
+
+  .fade-in:nth-child(1) { animation-delay: 0.1s; }
+  .fade-in:nth-child(2) { animation-delay: 0.2s; }
+  .fade-in:nth-child(3) { animation-delay: 0.3s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .border-grid { grid-template-columns: 1fr; }
+    .belt-row { grid-template-columns: 50px 1fr; grid-template-rows: auto auto; }
+    .belt-row > *:nth-child(n+3) { display: none; }
+    .train-row { grid-template-columns: 80px 1fr 70px; }
+    .train-row > *:nth-child(n+4) { display: none; }
+    .bus-row { grid-template-columns: 80px 1fr 70px; }
+    .bus-row > *:nth-child(n+4) { display: none; }
+    .belt-header, .train-header, .bus-header { display: none; }
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="sky-canvas"></canvas>
+
+<div class="page">
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="hero-eyebrow fade-in">London Stansted Airport · Live Terminal Status</p>
+    <h1 class="hero-title fade-in">Flock<br><em>&amp; Flow</em></h1>
+    <p class="hero-sub fade-in">Every arrival is a migration. Track border wait times, e-gate availability, baggage belts and onward transport — all in one place.</p>
+    <div class="hero-status-bar fade-in">
+      <div class="hero-stat">
+        <span class="hero-stat-label">Border wait</span>
+        <span class="hero-stat-value" id="hero-wait">18<span style="font-size:1rem;color:var(--text-muted)">min</span></span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">E-gates open</span>
+        <span class="hero-stat-value" id="hero-gates">14<span style="font-size:1rem;color:var(--text-muted)">/18</span></span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">Active belts</span>
+        <span class="hero-stat-value" id="hero-belts">4<span style="font-size:1rem;color:var(--text-muted)">/8</span></span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">Next train</span>
+        <span class="hero-stat-value" id="hero-train">06<span style="font-size:1rem;color:var(--text-muted)">min</span></span>
+      </div>
+    </div>
+    <p class="scroll-hint">↓ scroll to explore</p>
+  </section>
+
+  <!-- STICKY NAV -->
+  <nav class="nav-strip">
+    <span class="nav-brand">Flock &amp; Flow</span>
+    <ul class="nav-links">
+      <li><a href="#border">Border</a></li>
+      <li><a href="#baggage">Baggage</a></li>
+      <li><a href="#transport">Transport</a></li>
+    </ul>
+    <span class="nav-time" id="nav-clock">--:--:--</span>
+  </nav>
+
+  <!-- BORDER CONTROL -->
+  <section class="section" id="border">
+    <div class="section-header">
+      <span class="section-icon">🛂</span>
+      <h2 class="section-title">Border Control</h2>
+      <span class="section-subtitle">Live wait times</span>
+    </div>
+
+    <div class="border-grid">
+      <div class="border-panel">
+        <p class="border-panel-label">UK & EU / EEA Passport Holders</p>
+        <div class="wait-display">
+          <span class="wait-number green" id="wait-uk">12</span>
+          <span class="wait-unit">min avg wait</span>
+        </div>
+        <p class="wait-desc">E-gates and staffed lanes operating normally. Typical spring migration peak — volumes up 14% on this time last year.</p>
+        <div class="status-pill green" id="status-uk">Flowing freely</div>
+      </div>
+      <div class="border-panel">
+        <p class="border-panel-label">Non-EEA Passport Holders</p>
+        <div class="wait-display">
+          <span class="wait-number amber" id="wait-non">28</span>
+          <span class="wait-unit">min avg wait</span>
+        </div>
+        <p class="wait-desc">Two additional lanes opened at 14:30. Biometric checks running at standard pace. Seasonal peak expected to ease by 17:00.</p>
+        <div class="status-pill amber" id="status-non">Moderate congestion</div>
+      </div>
+    </div>
+
+    <div class="migration-callout" id="note-border">
+      <span style="opacity:0.4;font-size:0.85rem;font-style:normal;">Composing migration note…</span>
+    </div>
+
+    <!-- E-GATES -->
+    <div style="margin-top: 2rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <p style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">E-Gate availability — Hall A &amp; B</p>
+        <p style="font-size:9px;color:var(--moss-light);letter-spacing:0.1em;"><span id="gate-open-count">14</span> open · <span id="gate-closed-count">3</span> closed · <span id="gate-maint-count">1</span> maintenance</p>
+      </div>
+      <div class="egate-grid" id="egate-grid"></div>
+      <div class="egate-legend">
+        <span class="l-open">Open</span>
+        <span class="l-closed">Closed</span>
+        <span class="l-maint">Maintenance</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- BAGGAGE -->
+  <section class="section" id="baggage">
+    <div class="section-header">
+      <span class="section-icon">🧳</span>
+      <h2 class="section-title">Baggage Reclaim</h2>
+      <span class="section-subtitle">Belt status</span>
+    </div>
+
+    <div class="belt-header">
+      <span>Belt</span>
+      <span>Flight</span>
+      <span>Status</span>
+      <span>First bag</span>
+      <span>Last bag</span>
+    </div>
+    <div class="belt-list" id="belt-list"></div>
+
+    <div class="migration-callout" id="note-baggage" style="margin-top:1.5rem;">
+      <span style="opacity:0.4;font-size:0.85rem;font-style:normal;">Composing migration note…</span>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- TRANSPORT -->
+  <section class="section" id="transport">
+    <div class="section-header">
+      <span class="section-icon">🚂</span>
+      <h2 class="section-title">Onward Transport</h2>
+      <span class="section-subtitle">Departing from STN</span>
+    </div>
+
+    <div class="transport-tabs">
+      <button class="transport-tab active" onclick="switchTab('trains')">Trains</button>
+      <button class="transport-tab" onclick="switchTab('coaches')">National Express</button>
+      <button class="transport-tab" onclick="switchTab('buses')">Local buses</button>
+    </div>
+
+    <!-- TRAINS -->
+    <div class="transport-panel active" id="panel-trains">
+      <div class="table-header train-header">
+        <span>Departs</span>
+        <span>Destination</span>
+        <span>Platform</span>
+        <span>Status</span>
+        <span>From</span>
+      </div>
+      <div id="train-list"></div>
+    </div>
+
+    <!-- COACHES -->
+    <div class="transport-panel" id="panel-coaches">
+      <div class="table-header bus-header">
+        <span>Departs</span>
+        <span>Destination</span>
+        <span>Stand</span>
+        <span>Status</span>
+      </div>
+      <div id="coach-list"></div>
+    </div>
+
+    <!-- LOCAL BUSES -->
+    <div class="transport-panel" id="panel-buses">
+      <div class="table-header bus-header">
+        <span>Departs</span>
+        <span>Route</span>
+        <span>Stop</span>
+        <span>Status</span>
+      </div>
+      <div id="bus-list"></div>
+    </div>
+
+    <div class="migration-callout" id="note-transport" style="margin-top:1.5rem;">
+      <span style="opacity:0.4;font-size:0.85rem;font-style:normal;">Composing migration note…</span>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <div class="footer-brand">Flock &amp; Flow</div>
+      <p style="font-size:9px;color:var(--text-muted);margin-top:4px;letter-spacing:0.08em;">London Stansted Airport · STN</p>
+    </div>
+    <p class="footer-note">
+      Data shown is illustrative and simulated for demonstration purposes. In production, this interface would connect to the Stansted Airport API, National Rail Darwin feed, and UK Border Force public data. Last simulated refresh: <span id="last-refresh">--:--</span>
+    </p>
+  </footer>
+
+</div>
+
+<!-- ═══════════════════════════════ JS ═══════════════════════════════ -->
+<script>
+// ── CLOCK ──────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-GB');
+  document.getElementById('nav-clock').textContent = t;
+  document.getElementById('last-refresh').textContent = t;
+}
+tick();
+setInterval(tick, 1000);
+
+// ── SKY BIRD ANIMATION ─────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('sky-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Draw gradient sky
+  function drawSky() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#07111e');
+    grad.addColorStop(0.6, '#0e1a2b');
+    grad.addColorStop(1, '#1a2d44');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    ctx.fillStyle = 'rgba(240, 232, 216, 0.3)';
+    for (let i = 0; i < 80; i++) {
+      const x = (i * 137.5) % W;
+      const y = (i * 83.7) % (H * 0.6);
+      const r = 0.5 + (i % 3) * 0.4;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Horizon glow
+    const hGrad = ctx.createLinearGradient(0, H * 0.75, 0, H);
+    hGrad.addColorStop(0, 'transparent');
+    hGrad.addColorStop(1, 'rgba(196, 149, 106, 0.06)');
+    ctx.fillStyle = hGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Birds
+  class Bird {
+    constructor() { this.reset(true); }
+    reset(init) {
+      this.x = init ? Math.random() * W : -60;
+      this.y = 50 + Math.random() * (H * 0.45);
+      this.speed = 0.4 + Math.random() * 0.8;
+      this.amp = 4 + Math.random() * 8;
+      this.freq = 0.02 + Math.random() * 0.02;
+      this.phase = Math.random() * Math.PI * 2;
+      this.size = 6 + Math.random() * 8;
+      this.opacity = 0.15 + Math.random() * 0.35;
+      this.flapSpeed = 0.08 + Math.random() * 0.08;
+      this.flapPhase = Math.random() * Math.PI * 2;
+    }
+    update() {
+      this.x += this.speed;
+      this.y += Math.sin(this.x * this.freq + this.phase) * 0.3;
+      this.flapPhase += this.flapSpeed;
+      if (this.x > W + 60) this.reset(false);
+    }
+    draw(ctx) {
+      const wingAngle = Math.sin(this.flapPhase) * 0.4;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.globalAlpha = this.opacity;
+      ctx.strokeStyle = '#8fb8d0';
+      ctx.lineWidth = 1.2;
+      ctx.lineCap = 'round';
+      const s = this.size;
+      // Left wing
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(-s * 0.5, -s * wingAngle, -s, s * 0.1);
+      ctx.stroke();
+      // Right wing
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(s * 0.5, -s * wingAngle, s, s * 0.1);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  const birds = Array.from({ length: 28 }, () => new Bird());
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    drawSky();
+    birds.forEach(b => { b.update(); b.draw(ctx); });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ── E-GATES ───────────────────────────────────────────────
+const GATES = [
+  ...Array.from({length:8}, (_,i) => ({ id: `A${i+1}`, status: i < 7 ? 'open' : 'maintenance' })),
+  ...Array.from({length:10}, (_,i) => ({ id: `B${i+1}`, status: i < 7 ? 'open' : (i===9 ? 'closed' : 'closed') }))
+];
+
+// Make B8, B9, B10 closed
+GATES[15].status = 'closed';
+GATES[16].status = 'closed';
+GATES[17].status = 'closed';
+
+function renderGates() {
+  const grid = document.getElementById('egate-grid');
+  grid.innerHTML = GATES.map(g => `
+    <div class="egate ${g.status}" title="Gate ${g.id} — ${g.status}">
+      <span class="egate-icon">${g.status==='open'?'🚪':g.status==='maintenance'?'🔧':'✕'}</span>
+      <span class="egate-num">${g.id}</span>
+    </div>`).join('');
+  document.getElementById('gate-open-count').textContent = GATES.filter(g=>g.status==='open').length;
+  document.getElementById('gate-closed-count').textContent = GATES.filter(g=>g.status==='closed').length;
+  document.getElementById('gate-maint-count').textContent = GATES.filter(g=>g.status==='maintenance').length;
+  document.getElementById('hero-gates').innerHTML = GATES.filter(g=>g.status==='open').length + '<span style="font-size:1rem;color:var(--text-muted)">/' + GATES.length + '</span>';
+}
+renderGates();
+
+// ── BAGGAGE BELTS ─────────────────────────────────────────
+const BELTS = [
+  { num: 1, flight: 'FR2841', origin: 'Barcelona (BCN)', status: 'active', first: '14:22', last: '—' },
+  { num: 2, flight: 'EZY3014', origin: 'Rome Fiumicino (FCO)', status: 'active', first: '14:31', last: '—' },
+  { num: 3, flight: 'RYR4490', origin: 'Warsaw Chopin (WAW)', status: 'due', first: '~14:50', last: '—' },
+  { num: 4, flight: 'W64228', origin: 'Lisbon (LIS)', status: 'active', first: '14:18', last: '—' },
+  { num: 5, flight: 'U28819', origin: 'Dublin (DUB)', status: 'active', first: '14:27', last: '—' },
+  { num: 6, flight: 'FR1122', origin: 'Krakow (KRK)', status: 'due', first: '~15:05', last: '—' },
+  { num: 7, flight: '—', origin: 'Not assigned', status: 'wait', first: '—', last: '—' },
+  { num: 8, flight: '—', origin: 'Not assigned', status: 'wait', first: '—', last: '—' },
+];
+
+function renderBelts() {
+  document.getElementById('belt-list').innerHTML = BELTS.map(b => `
+    <div class="belt-row fade-in">
+      <span class="belt-num">${b.num}</span>
+      <div>
+        <div class="belt-flight">${b.flight}</div>
+        <div class="belt-origin">${b.origin}</div>
+      </div>
+      <span class="belt-status-badge ${b.status}">${
+        b.status === 'active' ? 'In progress' :
+        b.status === 'due' ? 'Expected soon' :
+        b.status === 'wait' ? 'Awaiting' : 'Complete'
+      }</span>
+      <span class="belt-time">${b.first}</span>
+      <span class="belt-time">${b.last}</span>
+    </div>`).join('');
+  document.getElementById('hero-belts').innerHTML = BELTS.filter(b=>b.status==='active').length + '<span style="font-size:1rem;color:var(--text-muted)">/' + BELTS.length + '</span>';
+}
+renderBelts();
+
+// ── TRANSPORT DATA ────────────────────────────────────────
+function minsFromNow(m) {
+  const d = new Date(Date.now() + m * 60000);
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function minsLabel(m) {
+  if (m <= 1) return 'Boarding';
+  if (m < 60) return `in ${m} min`;
+  return `in ${Math.floor(m/60)}h ${m%60}m`;
+}
+
+const TRAINS = [
+  { mins: 6,  dest: 'London Liverpool Street', stops: 'Non-stop · Stansted Express', plat: '1', status: 'on-time', fare: '£10.40' },
+  { mins: 21, dest: 'London Liverpool Street', stops: 'Non-stop · Stansted Express', plat: '1', status: 'on-time', fare: '£10.40' },
+  { mins: 36, dest: 'Cambridge', stops: 'via Bishop\'s Stortford', plat: '2', status: 'on-time', fare: '£9.20' },
+  { mins: 41, dest: 'London Liverpool Street', stops: 'Non-stop · Stansted Express', plat: '1', status: 'delayed', fare: '£10.40' },
+  { mins: 56, dest: 'London Liverpool Street', stops: 'Non-stop · Stansted Express', plat: '1', status: 'on-time', fare: '£10.40' },
+  { mins: 68, dest: 'Ely via Cambridge', stops: 'via Bishop\'s Stortford, Cambridge', plat: '2', status: 'on-time', fare: '£14.50' },
+];
+
+const COACHES = [
+  { mins: 12, dest: 'London Victoria Coach Station', stops: 'via M11 · NX007', stand: 'A1', status: 'on-time' },
+  { mins: 35, dest: 'London Victoria Coach Station', stops: 'via M11 · NX007', stand: 'A1', status: 'on-time' },
+  { mins: 55, dest: 'Heathrow Terminal 5', stops: 'Airport Connect · NX701', stand: 'A2', status: 'on-time' },
+  { mins: 70, dest: 'Luton Airport', stops: 'Airport Connect · NX702', stand: 'A2', status: 'delayed' },
+  { mins: 90, dest: 'Oxford', stops: 'via M40 · NX450', stand: 'A3', status: 'on-time' },
+  { mins: 105, dest: 'Birmingham New Street', stops: 'via M6 · NX310', stand: 'A3', status: 'on-time' },
+];
+
+const BUSES = [
+  { mins: 4,  route: '301 — Bishop\'s Stortford', stops: 'Takeley, Birchanger', stop: 'S1', status: 'on-time' },
+  { mins: 18, route: '308 — Harlow Town', stops: 'via Great Hallingbury', stop: 'S2', status: 'on-time' },
+  { mins: 32, route: '301 — Bishop\'s Stortford', stops: 'Takeley, Birchanger', stop: 'S1', status: 'on-time' },
+  { mins: 45, route: '510 — Saffron Walden', stops: 'via Elsenham, Newport', stop: 'S3', status: 'on-time' },
+  { mins: 58, route: '308 — Harlow Town', stops: 'via Great Hallingbury', stop: 'S2', status: 'delayed' },
+];
+
+function renderTrains() {
+  document.getElementById('train-list').innerHTML = TRAINS.map((t,i) => `
+    <div class="train-row fade-in">
+      <div>
+        <div class="depart-time">${minsFromNow(t.mins)}</div>
+        <span class="depart-mins" style="font-size:9px;color:${t.mins<=15?'var(--moss-light)':'var(--text-muted)'};display:block;margin-top:2px;letter-spacing:0.08em;">${minsLabel(t.mins)}</span>
+      </div>
+      <div>
+        <div class="route-name">${t.dest}</div>
+        <div class="route-stops">${t.stops}</div>
+      </div>
+      <span class="platform-badge">Plat ${t.plat}</span>
+      <span class="train-status ${t.status}">${t.status === 'on-time' ? 'On time' : t.status === 'delayed' ? '~5 min late' : 'Cancelled'}</span>
+      <span class="fare-tag">${t.fare}</span>
+    </div>`).join('');
+  document.getElementById('hero-train').innerHTML = TRAINS[0].mins + '<span style="font-size:1rem;color:var(--text-muted)">min</span>';
+}
+
+function renderCoaches() {
+  document.getElementById('coach-list').innerHTML = COACHES.map(c => `
+    <div class="bus-row fade-in">
+      <div>
+        <div class="depart-time">${minsFromNow(c.mins)}</div>
+        <span style="font-size:9px;color:${c.mins<=15?'var(--moss-light)':'var(--text-muted)'};display:block;margin-top:2px;letter-spacing:0.08em;">${minsLabel(c.mins)}</span>
+      </div>
+      <div>
+        <div class="route-name">${c.dest}</div>
+        <div class="route-stops">${c.stops}</div>
+      </div>
+      <span class="platform-badge">Stand ${c.stand}</span>
+      <span class="train-status ${c.status === 'on-time' ? 'on-time' : 'delayed'}">${c.status === 'on-time' ? 'On time' : 'Delayed'}</span>
+    </div>`).join('');
+}
+
+function renderBuses() {
+  document.getElementById('bus-list').innerHTML = BUSES.map(b => `
+    <div class="bus-row fade-in">
+      <div>
+        <div class="depart-time">${minsFromNow(b.mins)}</div>
+        <span style="font-size:9px;color:${b.mins<=10?'var(--moss-light)':'var(--text-muted)'};display:block;margin-top:2px;letter-spacing:0.08em;">${minsLabel(b.mins)}</span>
+      </div>
+      <div>
+        <div class="route-name">${b.route}</div>
+        <div class="route-stops">${b.stops}</div>
+      </div>
+      <span class="platform-badge">Stop ${b.stop}</span>
+      <span class="train-status ${b.status === 'on-time' ? 'on-time' : 'delayed'}">${b.status === 'on-time' ? 'On time' : 'Delayed'}</span>
+    </div>`).join('');
+}
+
+renderTrains(); renderCoaches(); renderBuses();
+
+// ── TAB SWITCHING ─────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.transport-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['trains','coaches','buses'][i] === name);
+  });
+  document.querySelectorAll('.transport-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── AI MIGRATION NOTES ────────────────────────────────────
+const NOTE_PLACEHOLDERS = {
+  border:   'Observing the flock…',
+  baggage:  'Watching the carousel turn…',
+  transport:'Charting the onward routes…'
+};
+
+function getContext() {
+  const now = new Date();
+  const hour = now.getHours();
+  const timeLabel =
+    hour < 5  ? 'the small hours before dawn' :
+    hour < 9  ? 'the early morning rush' :
+    hour < 12 ? 'mid-morning' :
+    hour < 14 ? 'the lunchtime peak' :
+    hour < 17 ? 'the afternoon wave' :
+    hour < 20 ? 'the evening peak' :
+                'the quiet late evening';
+  const month = now.toLocaleString('en-GB', { month: 'long' });
+  const ukWait  = parseInt(document.getElementById('wait-uk').textContent)  || 12;
+  const nonWait = parseInt(document.getElementById('wait-non').textContent) || 28;
+  const openGates = GATES.filter(g => g.status === 'open').length;
+  const activeBelts = BELTS.filter(b => b.status === 'active').length;
+  const origins = BELTS.filter(b => b.status === 'active').map(b => b.origin).join(', ') || 'various European cities';
+  return { timeLabel, month, ukWait, nonWait, openGates, activeBelts, origins };
+}
+
+async function fetchNote(section) {
+  const el = document.getElementById('note-' + section);
+  el.innerHTML = `<span style="opacity:0.35;font-size:0.85rem;font-style:normal;">${NOTE_PLACEHOLDERS[section]}</span>`;
+
+  const c = getContext();
+
+  const prompts = {
+    border: `You are writing a poetic "Migration note" for a live airport arrivals dashboard called Flock & Flow at London Stansted Airport.
+
+Current data:
+- Time of day: ${c.timeLabel}, ${c.month}
+- UK/EU border wait: ${c.ukWait} minutes
+- Non-EEA border wait: ${c.nonWait} minutes
+- E-gates open: ${c.openGates} of 18
+
+Write exactly 2 sentences. Draw a vivid parallel between migratory birds and human travellers arriving at Stansted right now. Reference the time of day, the wait times, or the season naturally. Use poetic, evocative language — mention a specific real migratory bird species. Do not use clichés.
+
+Format: Start with "<strong>Migration note —</strong> " then continue in plain text. Return only the note, no extra commentary.`,
+
+    baggage: `You are writing a poetic "Baggage note" for a live airport arrivals dashboard called Flock & Flow at London Stansted Airport.
+
+Current data:
+- Time of day: ${c.timeLabel}, ${c.month}
+- Active baggage belts: ${c.activeBelts} of 8
+- Flights currently unloading from: ${c.origins}
+
+Write exactly 2 sentences. Draw a poetic parallel between baggage reclaim and some aspect of bird migration — nesting, foraging, returning home, the final leg of a journey. Reference the origins of flights or the number of active belts naturally. Evocative, specific, not generic.
+
+Format: Start with "<strong>Baggage note —</strong> " then continue in plain text. Return only the note, no extra commentary.`,
+
+    transport: `You are writing a poetic "Onward journey" note for a live airport arrivals dashboard called Flock & Flow at London Stansted Airport.
+
+Current data:
+- Time of day: ${c.timeLabel}, ${c.month}
+- Next Stansted Express: ${TRAINS[0].mins} minutes
+- Coaches fanning out to: London Victoria, Heathrow, Luton, Oxford, Birmingham
+
+Write exactly 2 sentences. Draw a poetic parallel between travellers dispersing from Stansted by train and coach and birds dispersing from a staging post during migration — spreading across the landscape to their final destinations. Reference the Stansted Express or the coach network naturally. Vivid and specific.
+
+Format: Start with "<strong>Onward journey —</strong> " then continue in plain text. Return only the note, no extra commentary.`
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompts[section] }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content && data.content[0] && data.content[0].text;
+    if (text) {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity 0.6s ease';
+      el.innerHTML = text;
+      requestAnimationFrame(() => { el.style.opacity = '1'; });
+    }
+  } catch (err) {
+    console.warn('Migration note fetch failed:', err);
+    el.innerHTML = '<span style="opacity:0.4;font-size:0.85rem;">Note unavailable — the birds fly on regardless.</span>';
+  }
+}
+
+async function refreshAllNotes() {
+  await fetchNote('border');
+  await fetchNote('baggage');
+  await fetchNote('transport');
+}
+
+// Fetch on load, then every hour
+refreshAllNotes();
+setInterval(refreshAllNotes, 60 * 60 * 1000);
+
+// ── LIVE WAIT SIMULATION ──────────────────────────────────
+function simulateWaits() {
+  const ukBase = 10 + Math.round(Math.random() * 8);
+  const nonBase = 22 + Math.round(Math.random() * 12);
+  document.getElementById('wait-uk').textContent = ukBase;
+  document.getElementById('wait-non').textContent = nonBase;
+  document.getElementById('hero-wait').innerHTML = nonBase + '<span style="font-size:1rem;color:var(--text-muted)">min</span>';
+
+  const ukEl = document.getElementById('wait-uk');
+  const nonEl = document.getElementById('wait-non');
+  ukEl.className = 'wait-number ' + (ukBase < 15 ? 'green' : ukBase < 25 ? 'amber' : 'red');
+  nonEl.className = 'wait-number ' + (nonBase < 20 ? 'green' : nonBase < 35 ? 'amber' : 'red');
+
+  document.getElementById('status-uk').textContent = ukBase < 15 ? 'Flowing freely' : ukBase < 25 ? 'Moderate wait' : 'High congestion';
+  document.getElementById('status-uk').className = 'status-pill ' + (ukBase < 15 ? 'green' : ukBase < 25 ? 'amber' : 'red');
+  document.getElementById('status-non').textContent = nonBase < 20 ? 'Flowing freely' : nonBase < 35 ? 'Moderate congestion' : 'High congestion';
+  document.getElementById('status-non').className = 'status-pill ' + (nonBase < 20 ? 'green' : nonBase < 35 ? 'amber' : 'red');
+}
+setInterval(simulateWaits, 30000);
+</script>
+</body>
+</html>
